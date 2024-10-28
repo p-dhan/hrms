@@ -299,6 +299,13 @@ class PayrollEntry(Document):
 		else:
 			submit_salary_slips_for_employees(self, salary_slips, publish_progress=False)
 
+	@frappe.whitelist()
+	def create_payroll_journal_entry(self):
+		self.check_permission("write")
+		salary_slips = self.get_sal_slip_list(ss_status=1)
+		
+		payroll_entry.make_accrual_jv_entry(salary_slips)
+
 	def email_salary_slip(self, submitted_ss):
 		if frappe.db.get_single_value("Payroll Settings", "email_salary_slip_to_employee"):
 			for ss in submitted_ss:
@@ -860,6 +867,27 @@ class PayrollEntry(Document):
 			"has_bank_entries_for_withheld_salaries": not any(
 				employee.is_salary_withheld for employee in self.employees
 			),
+		}
+
+	@frappe.whitelist()
+	def has_journal_entries(self) -> dict[str, bool]:
+		je = frappe.qb.DocType("Journal Entry")
+		jea = frappe.qb.DocType("Journal Entry Account")
+
+		journal_entries = (
+			frappe.qb.from_(je)
+			.inner_join(jea)
+			.on(je.name == jea.parent)
+			.select(je.name)
+			.where(
+				(je.voucher_type == "Journal Entry")
+				& (jea.reference_name == self.name)
+				& (jea.reference_type == "Payroll Entry")
+			)
+		).run(as_dict=True)
+
+		return {
+			"has_journal_entries": bool(journal_entries),
 		}
 
 	@frappe.whitelist()
