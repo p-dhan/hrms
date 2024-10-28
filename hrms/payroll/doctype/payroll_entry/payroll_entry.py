@@ -313,7 +313,7 @@ class PayrollEntry(Document):
 				salary_slip = frappe.get_doc("Salary Slip", entry[0])
 				submitted.append(salary_slip)
 
-			payroll_entry.make_accrual_jv_entry(submitted)
+			self.make_accrual_jv_entry(submitted)
 
 		except Exception as e:
 			frappe.db.rollback()
