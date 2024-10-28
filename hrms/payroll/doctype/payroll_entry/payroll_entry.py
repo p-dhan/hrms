@@ -304,7 +304,26 @@ class PayrollEntry(Document):
 		self.check_permission("write")
 		salary_slips = self.get_sal_slip_list(ss_status=1)
 		
-		payroll_entry.make_accrual_jv_entry(salary_slips)
+		try:
+			submitted = []
+			frappe.flags.via_payroll_entry = True
+			count = 0
+
+			for entry in salary_slips:
+				salary_slip = frappe.get_doc("Salary Slip", entry[0])
+				submitted.append(salary_slip)
+
+			payroll_entry.make_accrual_jv_entry(submitted)
+
+		except Exception as e:
+			frappe.db.rollback()
+			log_payroll_failure("submission", payroll_entry, e)
+
+		finally:
+			frappe.db.commit()  # nosemgrep
+			frappe.publish_realtime("completed_journal_creation", user=frappe.session.user)
+
+		frappe.flags.via_payroll_entry = False
 
 	def email_salary_slip(self, submitted_ss):
 		if frappe.db.get_single_value("Payroll Settings", "email_salary_slip_to_employee"):

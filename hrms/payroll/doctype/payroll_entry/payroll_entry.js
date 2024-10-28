@@ -27,6 +27,11 @@ frappe.ui.form.on("Payroll Entry", {
 		frappe.realtime.on("completed_salary_slip_submission", function () {
 			frm.reload_doc();
 		});
+
+		frappe.realtime.off("completed_journal_creation");
+		frappe.realtime.on("completed_journal_creation", function () {
+			frm.reload_doc();
+		});
 	},
 
 	department_filters: function (frm) {
