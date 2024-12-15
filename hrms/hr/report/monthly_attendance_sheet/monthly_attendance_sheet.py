@@ -268,8 +268,6 @@ def get_attendance_records(filters: Filters) -> list[dict]:
 		.where(
 			(Attendance.docstatus == 1)
 			& (Attendance.company.isin(filters.companies))
-			& (Extract("month", Attendance.attendance_date) == filters.month)
-			& (Extract("year", Attendance.attendance_date) == filters.year)
 		)
 	)
 
