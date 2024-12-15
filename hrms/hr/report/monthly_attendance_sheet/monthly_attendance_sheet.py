@@ -172,7 +172,7 @@ def get_columns_for_days(filters: Filters) -> list[dict]:
 	total_days = get_total_days_in_month(filters)
 	days = []
 	
-	if Filters.use_payroll_dates:
+	if filters.use_payroll_dates:
 		from_date, to_date = get_payroll_dates(filters)
 		for day_range in range(0, total_days):
 			date = add_days(from_date, day_range)
