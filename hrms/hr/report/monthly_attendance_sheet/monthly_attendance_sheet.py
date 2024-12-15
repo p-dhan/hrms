@@ -174,7 +174,7 @@ def get_columns_for_days(filters: Filters) -> list[dict]:
 	
 	if filters.use_payroll_dates:
 		from_date, to_date = get_payroll_dates(filters)
-		for day_range in range(0, total_days):
+		for day_range in range(0, total_days + 1):
 			date = add_days(from_date, day_range)
 			# gets abbr from weekday number
 			day = date.day
