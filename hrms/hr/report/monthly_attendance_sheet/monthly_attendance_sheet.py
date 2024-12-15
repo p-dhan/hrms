@@ -198,7 +198,7 @@ def get_columns_for_days(filters: Filters) -> list[dict]:
 
 
 def get_total_days_in_month(filters: Filters) -> int:
-	if Filters.use_payroll_dates:
+	if filters.use_payroll_dates:
 		from_date, to_date = get_payroll_dates(filters)
 		return date_diff(to_date,from_date)
 	else:
