@@ -8,7 +8,7 @@ from itertools import groupby
 import frappe
 from frappe import _
 from frappe.query_builder.functions import Count, Extract, Sum
-from frappe.utils import cint, cstr, getdate
+from frappe.utils import add_days, add_months, cint, cstr, getdate
 from frappe.utils.nestedset import get_descendants_of
 
 Filters = frappe._dict
@@ -272,6 +272,17 @@ def get_attendance_records(filters: Filters) -> list[dict]:
 			& (Extract("year", Attendance.attendance_date) == filters.year)
 		)
 	)
+
+	if filters.use_payroll_dates:
+		first_day_of_the_month = getdate(filters.year + '-' + filters.month +'-01')
+		from_date = add_months(first_day_of_the_month, -1)
+		from_date = add_days(from_date, 24)
+		to_date = add_days(first_day_of_the_month, 24)
+		query = query.where(Attendance.attendance_date.between(from_date, to_date))
+	else:
+		query = query.where((Extract("month", Attendance.attendance_date) == filters.month)
+			& (Extract("year", Attendance.attendance_date) == filters.year))
+
 
 	if filters.employee:
 		query = query.where(Attendance.employee == filters.employee)
