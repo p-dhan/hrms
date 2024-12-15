@@ -384,16 +384,21 @@ def get_holiday_map(filters: Filters) -> dict[str, list[dict]]:
 	for d in holiday_lists:
 		if not d:
 			continue
-
-		holidays = (
+		query = (
 			frappe.qb.from_(Holiday)
 			.select(Extract("day", Holiday.holiday_date).as_("day_of_month"), Holiday.weekly_off)
 			.where(
 				(Holiday.parent == d)
-				& (Extract("month", Holiday.holiday_date) == filters.month)
-				& (Extract("year", Holiday.holiday_date) == filters.year)
 			)
-		).run(as_dict=True)
+		)		
+
+		if filters.use_payroll_dates:
+			from_date, to_date = get_payroll_dates(filters)
+			query = query.where(Holiday.holiday_date.between(from_date, to_date))
+		else:
+			query = query.where((Extract("month", Holiday.holiday_date) == filters.month)
+				& (Extract("year", Holiday.holiday_date) == filters.year))
+		holidays = query.run(as_dict=True)
 
 		holiday_map.setdefault(d, holidays)
 
