@@ -76,6 +76,12 @@ frappe.query_reports["Monthly Attendance Sheet"] = {
 			fieldtype: "Check",
 			default: 1,
 		},
+		{
+			fieldname: "exclude_management",
+			label: __("Exclude Management"),
+			fieldtype: "Check",
+			default: 1,
+		},
 	],
 	onload: function () {
 		return frappe.call({

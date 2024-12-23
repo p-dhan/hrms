@@ -301,6 +301,8 @@ def get_attendance_records(filters: Filters) -> list[dict]:
 		query = query.where((Extract("month", Attendance.attendance_date) == filters.month)
 			& (Extract("year", Attendance.attendance_date) == filters.year))
 
+	if filters.exclude_management:
+		query = query.where(Attendance.department != "Management")
 
 	if filters.employee:
 		query = query.where(Attendance.employee == filters.employee)
@@ -329,6 +331,9 @@ def get_employee_related_details(filters: Filters) -> tuple[dict, list]:
 		)
 		.where(Employee.company.isin(filters.companies))
 	)
+
+	if filters.exclude_management:
+		query = query.where(Attendance.department != "Management")
 
 	if filters.employee:
 		query = query.where(Employee.name == filters.employee)
