@@ -333,7 +333,7 @@ def get_employee_related_details(filters: Filters) -> tuple[dict, list]:
 	)
 
 	if filters.exclude_management:
-		query = query.where(Attendance.department != "Management")
+		query = query.where(Employee.department != "Management")
 
 	if filters.employee:
 		query = query.where(Employee.name == filters.employee)
