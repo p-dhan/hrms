@@ -174,7 +174,7 @@ def get_columns_for_days(filters: Filters) -> list[dict]:
 	
 	if filters.use_payroll_dates:
 		from_date, to_date = get_payroll_dates(filters)
-		for day_range in range(0, total_days + 1):
+		for day_range in range(0, total_days):
 			date = add_days(from_date, day_range)
 			# gets abbr from weekday number
 			day = date.day
@@ -200,7 +200,7 @@ def get_columns_for_days(filters: Filters) -> list[dict]:
 def get_total_days_in_month(filters: Filters) -> int:
 	if filters.use_payroll_dates:
 		from_date, to_date = get_payroll_dates(filters)
-		return date_diff(to_date,from_date)
+		return date_diff(to_date,from_date) + 1
 	else:
 		return monthrange(cint(filters.year), cint(filters.month))[1]
 
