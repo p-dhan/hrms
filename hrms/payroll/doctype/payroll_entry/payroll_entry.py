@@ -1070,6 +1070,9 @@ class PayrollEntry(Document):
 					- (employee_details.get("total_loan_repayment", 0) or 0)
 				)
 
+				if je_payment_amount == 0:
+					continue
+
 				exchange_rate, amount = self.get_amount_and_exchange_rate_for_journal_entry(
 					self.payment_account, je_payment_amount, company_currency, currencies
 				)
