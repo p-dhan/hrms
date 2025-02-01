@@ -740,7 +740,7 @@ class PayrollEntry(Document):
 					employee_details.get("deductions", 0) or 0
 				)
 
-				if flt(payable_amount) != 0:
+				if payable_amount != 0:
 					payable_amount = self.get_accounting_entries_and_payable_amount(
 						payroll_payable_account,
 						self.cost_center,
