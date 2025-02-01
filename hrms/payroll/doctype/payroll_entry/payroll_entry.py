@@ -740,20 +740,19 @@ class PayrollEntry(Document):
 					employee_details.get("deductions", 0) or 0
 				)
 
-				# if payable_amount != 0:
-				# 	payable_amount = self.get_accounting_entries_and_payable_amount(
-				# 		payroll_payable_account,
-				# 		self.cost_center,
-				# 		payable_amount,
-				# 		currencies,
-				# 		company_currency,
-				# 		0,
-				# 		accounting_dimensions,
-				# 		precision,
-				# 		entry_type="payable",
-				# 		party=employee,
-				# 		accounts=accounts,
-				# 	)
+				payable_amount = self.get_accounting_entries_and_payable_amount(
+					payroll_payable_account,
+					self.cost_center,
+					payable_amount,
+					currencies,
+					company_currency,
+					0,
+					accounting_dimensions,
+					precision,
+					entry_type="payable",
+					party=employee,
+					accounts=accounts,
+				)
 		else:
 			payable_amount = self.get_accounting_entries_and_payable_amount(
 				payroll_payable_account,
@@ -841,7 +840,7 @@ class PayrollEntry(Document):
 			accounting_dimensions,
 		)
 
-		if flt(amt):
+		if amt:
 			accounts.append(row)
 
 		return payable_amount
