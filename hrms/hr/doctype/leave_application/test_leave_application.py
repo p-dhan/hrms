@@ -31,6 +31,7 @@ from hrms.hr.doctype.leave_application.leave_application import (
 	get_leave_details,
 	get_new_and_cf_leaves_taken,
 )
+from hrms.hr.doctype.leave_ledger_entry.leave_ledger_entry import expire_allocation
 from hrms.hr.doctype.leave_policy_assignment.leave_policy_assignment import (
 	create_assignment_for_multiple_employees,
 )
@@ -1282,6 +1283,131 @@ class TestLeaveApplication(FrappeTestCase):
 		details = get_leave_allocation_records(employee.name, add_days(cf_expiry, -1), leave_type.name)
 		# filters out old CF leaves (15 i.e total 45)
 		self.assertEqual(details[leave_type.name]["total_leaves_allocated"], 30.0)
+
+	def test_modifying_attendance_when_half_day_exists_from_checkins(self):
+		employee = get_employee()
+		leave_type = create_leave_type(
+			leave_type_name="_Test_CF_leave_expiry",
+			is_carry_forward=1,
+			expire_carry_forwarded_leaves_after_days=90,
+		)
+
+		create_carry_forwarded_allocation(employee, leave_type)
+		# when existing attendance is half day
+		attendance_name = mark_attendance(
+			employee=employee.name, attendance_date=nowdate(), status="Half Day", half_day_status="Absent"
+		)
+		leave_application = make_leave_application(
+			employee.name,
+			nowdate(),
+			nowdate(),
+			leave_type.name,
+			submit=True,
+			half_day=1,
+			half_day_date=nowdate(),
+		)
+		attendance = frappe.get_value(
+			"Attendance",
+			attendance_name,
+			["status", "half_day_status", "leave_type", "leave_application"],
+			as_dict=True,
+		)
+		self.assertEqual(attendance.status, "Half Day")
+		self.assertEqual(attendance.half_day_status, "Present")
+		self.assertEqual(attendance.leave_type, leave_type.name)
+		self.assertEqual(attendance.leave_application, leave_application.name)
+
+	def test_modifying_attendance_from_absent_to_half_day(self):
+		employee = get_employee()
+		leave_type = create_leave_type(
+			leave_type_name="_Test_CF_leave_expiry",
+			is_carry_forward=1,
+			expire_carry_forwarded_leaves_after_days=90,
+		)
+
+		create_carry_forwarded_allocation(employee, leave_type)
+		# when existing attendance is absent
+		attendance_name = mark_attendance(employee=employee.name, attendance_date=nowdate(), status="Absent")
+
+		leave_application = make_leave_application(
+			employee.name,
+			add_days(nowdate(), -3),
+			add_days(nowdate(), 3),
+			leave_type.name,
+			submit=True,
+			half_day=1,
+			half_day_date=nowdate(),
+		)
+		attendance = frappe.get_value(
+			"Attendance",
+			attendance_name,
+			["status", "half_day_status", "leave_type", "leave_application", "modify_half_day_status"],
+			as_dict=True,
+		)
+		self.assertEqual(attendance.status, "Half Day")
+		self.assertEqual(attendance.half_day_status, "Present")
+		self.assertEqual(attendance.leave_type, leave_type.name)
+		self.assertEqual(attendance.leave_application, leave_application.name)
+		self.assertEqual(attendance.modify_half_day_status, 1)
+
+	def test_half_day_status_for_two_half_leaves(self):
+		employee = get_employee()
+		leave_type = create_leave_type(
+			leave_type_name="_Test_CF_leave_expiry",
+			is_carry_forward=1,
+			expire_carry_forwarded_leaves_after_days=90,
+		)
+		create_carry_forwarded_allocation(employee, leave_type)
+		# attendance from one half leave
+		first_leave_application = make_leave_application(
+			employee.name,
+			nowdate(),
+			nowdate(),
+			leave_type.name,
+			submit=True,
+			half_day=1,
+			half_day_date=nowdate(),
+		)
+		half_day_status_after_first_application = frappe.get_value(
+			"Attendance",
+			filters={"attendance_date": nowdate(), "leave_application": first_leave_application.name},
+			fieldname="half_day_status",
+		)
+		# default is present
+		self.assertEqual(half_day_status_after_first_application, "Present")
+		second_leave_application = make_leave_application(
+			employee.name,
+			nowdate(),
+			nowdate(),
+			leave_type.name,
+			submit=True,
+			half_day=1,
+			half_day_date=nowdate(),
+		)
+		half_day_status_after_second_application = frappe.get_value(
+			"Attendance",
+			filters={"attendance_date": nowdate(), "leave_application": second_leave_application.name},
+			fieldname="half_day_status",
+		)
+		# the status should remain unchanged after creating second half day leave application
+		self.assertEqual(half_day_status_after_second_application, "Present")
+
+	def test_leave_balance_when_allocation_is_expired_manually(self):
+		leave_type = create_leave_type(leave_type_name="Compensatory Off")
+		employee = get_employee()
+
+		leave_allocation = create_leave_allocation(
+			leave_type=leave_type.name, employee=employee.name, employee_name=employee.employee_name
+		)
+		leave_allocation.submit()
+
+		expire_allocation(leave_allocation, expiry_date=getdate())
+
+		leave_balance = get_leave_balance_on(
+			employee=employee.name, leave_type=leave_type.name, date=getdate()
+		)
+
+		self.assertEqual(leave_balance, 0)
 
 
 def create_carry_forwarded_allocation(employee, leave_type, date=None):
