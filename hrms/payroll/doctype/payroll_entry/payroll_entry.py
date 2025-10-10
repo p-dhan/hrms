@@ -628,7 +628,7 @@ class PayrollEntry(Document):
 				user_remark=_("Accrual Journal Entry for salaries from {0} to {1}").format(
 					self.start_date, self.end_date
 				),
-				submit_journal_entry=False,
+				submit_journal_entry=True,
 				submitted_salary_slips=submitted_salary_slips,
 			)
 			frappe.flags.party_not_required_for_receivable_payable = False
