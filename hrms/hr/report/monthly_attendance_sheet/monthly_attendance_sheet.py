@@ -196,15 +196,28 @@ def get_columns_for_leave_types() -> list[dict]:
 
 def get_columns_for_days(filters: Filters) -> list[dict]:
 	days = []
-	dates_in_period = get_dates_in_period(filters)
-	for d in dates_in_period:
-		d = getdate(d)
-		# gets abbr from weekday number
-		abbr_weekday = day_abbr[d.weekday()]
-		# sets days as 1 Mon, 2 Tue, 3 Wed
-		label = f"{d.day} {abbr_weekday}"
-		days.append({"label": label, "fieldtype": "Data", "fieldname": d.strftime("%d-%m-%Y"), "width": 65})
+	
+	if filters.use_payroll_dates:
+		from_date, to_date = get_payroll_dates(filters)
+		for day_range in range(0, total_days):
+			date = add_days(from_date, day_range)
+			# gets abbr from weekday number
+			day = date.day
+			weekday = day_abbr[date.weekday()]
+			# sets days as 1 Mon, 2 Tue, 3 Wed
+			label = f"{day} {weekday}"
+			days.append({"label": label, "fieldtype": "Data", "fieldname": day, "width": 65})
 
+	else:
+		dates_in_period = get_dates_in_period(filters)
+		for d in dates_in_period:
+			d = getdate(d)
+			# gets abbr from weekday number
+			abbr_weekday = day_abbr[d.weekday()]
+			# sets days as 1 Mon, 2 Tue, 3 Wed
+			label = f"{d.day} {abbr_weekday}"
+			days.append({"label": label, "fieldtype": "Data", "fieldname": d.strftime("%d-%m-%Y"), "width": 65})
+		
 	return days
 
 
@@ -223,8 +236,11 @@ def get_dates_in_period(filters: Filters) -> list[str]:
 
 
 def get_total_days_in_month(filters: Filters) -> int:
-	return monthrange(cint(filters.year), cint(filters.month))[1]
-
+	if filters.use_payroll_dates:
+		from_date, to_date = get_payroll_dates(filters)
+		return date_diff(to_date,from_date) + 1
+	else:
+		return monthrange(cint(filters.year), cint(filters.month))[1]
 
 def get_date_condition(docfield: Field, filters: Filters) -> Criterion:
 	if filters.filter_based_on == "Month":
@@ -302,6 +318,12 @@ def get_attendance_map(filters: Filters) -> dict:
 
 	return attendance_map
 
+def get_payroll_dates(filters: Filters) -> tuple[datetime.date, datetime.date]:
+	first_day_of_the_month = getdate(filters.year + '-' + filters.month +'-01')
+	from_date = add_months(first_day_of_the_month, -1)
+	from_date = add_days(from_date, 24)
+	to_date = add_days(first_day_of_the_month, 23)
+	return from_date, to_date
 
 def get_attendance_records(filters: Filters) -> list[dict]:
 	Attendance = frappe.qb.DocType("Attendance")
@@ -332,6 +354,16 @@ def get_attendance_records(filters: Filters) -> list[dict]:
 			& (attendance_date_condition)
 		)
 	)
+
+	if filters.use_payroll_dates:
+		from_date, to_date = get_payroll_dates(filters)
+		query = query.where(Attendance.attendance_date.between(from_date, to_date))
+	else:
+		query = query.where((Extract("month", Attendance.attendance_date) == filters.month)
+			& (Extract("year", Attendance.attendance_date) == filters.year))
+
+	if filters.exclude_management:
+		query = query.where(Attendance.department != "Management")
 
 	if filters.employee:
 		query = query.where(Attendance.employee == filters.employee)
@@ -371,6 +403,9 @@ def get_employee_related_details(filters: Filters) -> tuple[dict, list]:
 		)
 		.where(Employee.company.isin(filters.companies))
 	)
+
+	if filters.exclude_management:
+		query = query.where(Employee.department != "Management")
 
 	if filters.employee:
 		query = query.where(Employee.name == filters.employee)
@@ -428,12 +463,20 @@ def get_holiday_map(filters: Filters) -> dict[str, list[dict]]:
 	for d in holiday_lists:
 		if not d:
 			continue
-
-		holidays = (
+		query = (
 			frappe.qb.from_(Holiday)
 			.select(Holiday.holiday_date, Holiday.weekly_off)
 			.where((Holiday.parent == d) & (holiday_condition))
-		).run(as_dict=True)
+		)
+
+		if filters.use_payroll_dates:
+			from_date, to_date = get_payroll_dates(filters)
+			query = query.where(Holiday.holiday_date.between(from_date, to_date))
+		else:
+			query = query.where((Extract("month", Holiday.holiday_date) == filters.month)
+				& (Extract("year", Holiday.holiday_date) == filters.year))
+		holidays = query.run(as_dict=True)
+    
 		holiday_map.setdefault(d, holidays)
 
 	return holiday_map
