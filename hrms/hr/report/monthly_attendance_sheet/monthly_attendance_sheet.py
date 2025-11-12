@@ -209,15 +209,15 @@ def get_columns_for_days(filters: Filters) -> list[dict]:
 			days.append({"label": label, "fieldtype": "Data", "fieldname": day, "width": 65})
 
 	else:
-    dates_in_period = get_dates_in_period(filters)
-    for d in dates_in_period:
-      d = getdate(d)
-      # gets abbr from weekday number
-      abbr_weekday = day_abbr[d.weekday()]
-      # sets days as 1 Mon, 2 Tue, 3 Wed
-      label = f"{d.day} {abbr_weekday}"
-      days.append({"label": label, "fieldtype": "Data", "fieldname": d.strftime("%d-%m-%Y"), "width": 65})
-      
+		dates_in_period = get_dates_in_period(filters)
+		for d in dates_in_period:
+			d = getdate(d)
+			# gets abbr from weekday number
+			abbr_weekday = day_abbr[d.weekday()]
+			# sets days as 1 Mon, 2 Tue, 3 Wed
+			label = f"{d.day} {abbr_weekday}"
+			days.append({"label": label, "fieldtype": "Data", "fieldname": d.strftime("%d-%m-%Y"), "width": 65})
+		
 	return days
 
 
