@@ -318,7 +318,7 @@ def get_attendance_map(filters: Filters) -> dict:
 
 	return attendance_map
 
-def get_payroll_dates(filters: Filters) -> tuple[datetime.date, datetime.date]:
+def get_payroll_dates(filters: Filters) -> tuple[date, date]:
 	first_day_of_the_month = getdate(filters.year + '-' + filters.month +'-01')
 	from_date = add_months(first_day_of_the_month, -1)
 	from_date = add_days(from_date, 24)
