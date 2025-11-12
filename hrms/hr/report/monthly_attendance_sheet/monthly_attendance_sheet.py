@@ -239,7 +239,7 @@ def get_dates_in_period(filters: Filters) -> list[str]:
 def get_total_days_in_month(filters: Filters) -> int:
 	if filters.use_payroll_dates:
 		from_date, to_date = get_payroll_dates(filters)
-		return date_diff(to_date,from_date)
+		return date_diff(to_date,from_date) + 1
 	else:
 		return monthrange(cint(filters.year), cint(filters.month))[1]
 
