@@ -195,6 +195,7 @@ def get_columns_for_leave_types() -> list[dict]:
 
 
 def get_columns_for_days(filters: Filters) -> list[dict]:
+	total_days = get_total_days_in_month(filters)
 	days = []
 	
 	if filters.use_payroll_dates:
