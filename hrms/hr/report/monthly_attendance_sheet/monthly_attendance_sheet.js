@@ -110,12 +110,6 @@ frappe.query_reports["Monthly Attendance Sheet"] = {
 			default: 0,
 		},
 		{
-			fieldname: "use_payroll_dates",
-			label: __("Use Payroll Dates"),
-			fieldtype: "Check",
-			default: 1,
-		},
-		{
 			fieldname: "exclude_management",
 			label: __("Exclude Management"),
 			fieldtype: "Check",
