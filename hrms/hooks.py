@@ -163,7 +163,6 @@ doc_events = {
 			"erpnext.setup.doctype.employee.employee.validate_employee_role",
 			"hrms.overrides.employee_master.update_approver_user_roles",
 		],
-		"on_update": "erpnext.setup.doctype.employee.employee.update_user_permissions",
 	},
 	"Company": {
 		"validate": "hrms.overrides.company.validate_default_accounts",
