@@ -271,7 +271,10 @@ frappe.ui.form.on("Salary Slip", {
 	set_payment_days_description: function (frm) {
 		if (frm.doc.docstatus !== 0) return;
 
-		frappe.call("hrms.payroll.utils.get_payroll_settings_for_payment_days").then((r) => {
+		frappe.call({
+				method: "hrms.payroll.utils.get_payroll_settings_for_payment_days",
+				args: { employee: frm.doc.employee },
+			}).then((r) => {
 			const {
 				payroll_based_on,
 				consider_unmarked_attendance_as,

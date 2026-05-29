@@ -471,9 +471,18 @@ class SalarySlip(TransactionBase):
 			as_dict=1,
 		)
 
+		employee_override = frappe.get_cached_value(
+			"Employee", self.employee, "custom_include_holidays_in_total_working_days"
+		)
+		if employee_override == "Yes":
+			include_holidays = 1
+		elif employee_override == "No":
+			include_holidays = 0
+		else:
+			include_holidays = payroll_settings.include_holidays_in_total_working_days
+
 		consider_marked_attendance_on_holidays = (
-			payroll_settings.include_holidays_in_total_working_days
-			and payroll_settings.consider_marked_attendance_on_holidays
+			include_holidays and payroll_settings.consider_marked_attendance_on_holidays
 		)
 
 		daily_wages_fraction_for_half_day = flt(payroll_settings.daily_wages_fraction_for_half_day) or 0.5
@@ -487,7 +496,7 @@ class SalarySlip(TransactionBase):
 		holidays = self.get_holidays_for_employee(self.start_date, self.end_date)
 		working_days_list = [add_days(getdate(self.start_date), days=day) for day in range(0, working_days)]
 
-		if not cint(payroll_settings.include_holidays_in_total_working_days):
+		if not cint(include_holidays):
 			working_days_list = [i for i in working_days_list if i not in holidays]
 
 			working_days -= len(holidays)
@@ -519,7 +528,7 @@ class SalarySlip(TransactionBase):
 		self.leave_without_pay = lwp
 		self.total_working_days = working_days
 
-		payment_days = self.get_payment_days(payroll_settings.include_holidays_in_total_working_days)
+		payment_days = self.get_payment_days(include_holidays)
 
 		if flt(payment_days) > flt(lwp):
 			self.payment_days = flt(payment_days) - flt(lwp)
@@ -532,7 +541,7 @@ class SalarySlip(TransactionBase):
 			if payroll_settings.payroll_based_on == "Attendance":
 				if consider_unmarked_attendance_as == "Absent":
 					unmarked_days = self.get_unmarked_days(
-						payroll_settings.include_holidays_in_total_working_days, holidays
+						include_holidays, holidays
 					)
 					self.absent_days += unmarked_days  # will be treated as absent
 					self.payment_days -= unmarked_days

@@ -27,8 +27,8 @@ def sanitize_expression(string: str | None = None) -> str | None:
 
 
 @frappe.whitelist()
-def get_payroll_settings_for_payment_days() -> dict:
-	return frappe.get_cached_value(
+def get_payroll_settings_for_payment_days(employee=None) -> dict:
+	settings = frappe.get_cached_value(
 		"Payroll Settings",
 		None,
 		[
@@ -39,3 +39,12 @@ def get_payroll_settings_for_payment_days() -> dict:
 		],
 		as_dict=True,
 	)
+	if employee:
+		override = frappe.get_cached_value(
+			"Employee", employee, "custom_include_holidays_in_total_working_days"
+		)
+		if override == "Yes":
+			settings["include_holidays_in_total_working_days"] = 1
+		elif override == "No":
+			settings["include_holidays_in_total_working_days"] = 0
+	return settings
