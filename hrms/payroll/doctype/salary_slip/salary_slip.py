@@ -55,6 +55,7 @@ from hrms.payroll.doctype.salary_slip.salary_slip_loan_utils import (
 )
 from hrms.payroll.utils import (
 	COMPONENT_EVAL_GLOBALS,
+	COMPONENT_PARENTFIELDS,
 	_safe_eval,
 	get_component_eval_context,
 	throw_error_message,
@@ -355,6 +356,7 @@ class SalarySlip(TransactionBase):
 		if self.employee:
 			self.set("earnings", [])
 			self.set("deductions", [])
+			self.set("employer_contributions", [])
 			if hasattr(self, "loans"):
 				self.set("loans", [])
 
@@ -880,6 +882,10 @@ class SalarySlip(TransactionBase):
 		# by process_salary_structure, before totals are finalised below.
 		self.apply_regional_deductions()
 
+		# shown on the slip, but never part of gross, deduction or net pay
+		if self.salary_structure:
+			self.calculate_component_amounts("employer_contributions")
+
 		self.set_precision_for_component_amounts()
 		self.set_net_pay()
 		if not skip_tax_breakup_computation:
@@ -1182,6 +1188,11 @@ class SalarySlip(TransactionBase):
 			self._set_evaluated_components()
 
 		self.add_structure_components(component_type)
+
+		if component_type == "employer_contributions":
+			# additional salary, tax and flexi benefits are earning/deduction only
+			return
+
 		self.add_additional_salary_components(component_type)
 		if component_type == "earnings":
 			self.add_employee_benefits()
@@ -1303,7 +1314,7 @@ class SalarySlip(TransactionBase):
 		# shallow copy to store default amounts (without payment-days proration) for tax calculation
 		default_data = data.copy()
 
-		for key in ("earnings", "deductions"):
+		for key in COMPONENT_PARENTFIELDS:
 			for d in self.get(key):
 				default_data[d.abbr] = d.default_amount or 0
 				data[d.abbr] = d.amount or 0
@@ -1816,7 +1827,7 @@ class SalarySlip(TransactionBase):
 			self.remove(component_row)
 
 	def set_precision_for_component_amounts(self):
-		for component_type in ("earnings", "deductions"):
+		for component_type in COMPONENT_PARENTFIELDS:
 			for component_row in self.get(component_type):
 				component_row.amount = flt(component_row.amount, component_row.precision("amount"))
 
@@ -2356,7 +2367,7 @@ class SalarySlip(TransactionBase):
 		ss = frappe.qb.DocType("Salary Slip")
 		sd = frappe.qb.DocType("Salary Detail")
 
-		for key in ("earnings", "deductions"):
+		for key in COMPONENT_PARENTFIELDS:
 			for component in self.get(key):
 				year_to_date = 0
 				component_sum = (
@@ -2633,7 +2644,7 @@ def on_doctype_update():
 	frappe.db.add_index("Salary Slip", ["employee", "start_date", "end_date"])
 
 
-@frappe.whitelist()
+@frappe.whitelist(methods=["POST"])
 def enqueue_email_salary_slips(names: list | str) -> None:
 	"""enqueue bulk emailing salary slips"""
 	import json

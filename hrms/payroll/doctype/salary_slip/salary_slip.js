@@ -376,6 +376,7 @@ frappe.ui.form.on("Salary Detail", {
 						});
 						refresh_field("earnings");
 						refresh_field("deductions");
+						refresh_field("employer_contributions");
 					}
 				},
 			});
